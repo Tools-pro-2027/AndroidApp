@@ -2,6 +2,7 @@
 title = Dream Horror
 package.name = dreamhorror
 package.domain = org.horror
+source.dir = .
 source.include_exts = py,png,jpg,kv,atlas
 version = 0.1
 requirements = python3,kivy
