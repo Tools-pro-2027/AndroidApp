@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">Auto Sender</string>
+    <string name="accessibility_desc">أداة أتمتة إرسال الرسائل (تشتغل بس على واتساب)</string>
+</resources>
